@@ -117,7 +117,7 @@ async def startupmessage():
                 BOTLOG_CHATID,
                 "https://telegra.ph/file/0d1a98d20bad238eb46ce.mp4",
                 caption="**تم تشغيل سورس ارمكس بنجاح لعرض الاوامر ارسل .الاوامر**",
-                buttons=[(Button.url("مطور السورس", "https://t.me/gro_up_1"),)],
+                buttons=[(Button.url("مطور السورس", "https://t.me/USERNAME_NOT_REGISTED"),)],
             )
     except Exception as e:
         LOGS.error(e)
