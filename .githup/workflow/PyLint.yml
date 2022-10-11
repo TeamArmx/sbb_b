@@ -30,6 +30,6 @@ jobs:
           commit_message: 'rickthon fixed'
           commit_options: '--no-verify'
           repository: .
-          commit_user_name: wjut
-          commit_user_email: m7black12@gmail.com
-          commit_author: wjut<m7black12@gmail.com>
+          commit_user_name: remexstar
+          commit_user_email: ahmedremex@gmail.com
+          commit_author: remexstar<ahmedremex2005@gmail.com>
