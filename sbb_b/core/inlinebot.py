@@ -53,7 +53,7 @@ def ibuild_keyboard(buttons):
 
 
 def main_menu():
-    text = f"**▾∮ مرحبا عزيزي {mention}**\n**▾اليكَ قائمة بازرار مضمنة لاوامر ↫**⍣ⵧⵧⵧDEAD CODE ⵧⵧⵧⵧ⍣**\n[ََِِ𝗰.ًًٍٍ𝗥 ًًٍٍ𝗨ٍّّ𝘀ََِِ𝗲ًًٍٍ𝗥ًًٍٍ𝗕ُُ𝗼ٖٔ𝗧 🧸♥](https://t.me/USERNAME_NOT_REGISTED)\n\n"
+    text = f"**▾∮ مرحبا عزيزي {mention}**\n**▾اليكَ قائمة بازرار مضمنة لاوامر ↫**⍣ⵧⵧⵧDEAD CODE ⵧⵧⵧⵧ⍣**\n[ََِِ𝗰.ًًٍٍ𝗥 ًًٍٍARMX SOURE CODE🧸♥](https://t.me/USERNAME_NOT_REGISTED)\n\n"
     buttons = [
         (Button.inline("معلومات الملفات 🗂", data="check"),),
         (
