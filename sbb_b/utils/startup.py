@@ -116,8 +116,8 @@ async def startupmessage():
             Config.JMTHONLOGO = await sbb_b.tgbot.send_file(
                 BOTLOG_CHATID,
                 "https://telegra.ph/file/0d1a98d20bad238eb46ce.mp4",
-                caption="**تم تشغيلسورس ارمكس بنجاح لعرض الاوامر ارسل .الاوامر**",
-                buttons=[(Button.url("كروب المساعدة", "https://t.me/gro_up_1"),)],
+                caption="**تم تشغيل سورس ارمكس بنجاح لعرض الاوامر ارسل .الاوامر**",
+                buttons=[(Button.url("مطور السورس", "https://t.me/gro_up_1"),)],
             )
     except Exception as e:
         LOGS.error(e)

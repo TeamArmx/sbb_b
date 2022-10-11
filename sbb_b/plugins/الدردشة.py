@@ -14,7 +14,7 @@ from ..helpers.utils import reply_id
 from . import sbb_b, mention
 
 chr = Config.COMMAND_HAND_LER
-wjj_u = "اهلا بك زين مطوري @wjj_u"
+wjj_u = "اهلا بك زين مطوري @USERNAME_NOT_REGISTED"
 PICS_STR = []
 
 from sbb_b import sbb_b 
@@ -26,7 +26,7 @@ from ..Config import Config
 async def _(event):
     user = await event.get_sender()
     if user.id == 1355571767:
-        await event.reply("هلا بيك @wjj_u تاج راسي")
+        await event.reply("هلا بيك @USERNAME_NOT_REGISTED تاج راسي")
 
 
 @sbb_b.ar_cmd(pattern="بوتي$")
