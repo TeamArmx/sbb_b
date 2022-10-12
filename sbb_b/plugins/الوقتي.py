@@ -15,7 +15,7 @@ from ..helpers.utils import _format
 from ..sql_helper.globals import addgvar, delgvar, gvarstatus
 from . import edit_delete, logging, sbb_b
 
-DEFAULTUSERBIO = Config.DEFAULT_BIO or "-No thing describe me .idiot ⚡️ "
+DEFAULTUSERBIO = Config.DEFAULT_BIO or "-No thing describe me.idiot ⚡️| "
 DEFAULTUSER = gvarstatus("DEFAULT_NAME") or Config.ALIVE_NAME
 LOGS = logging.getLogger(__name__)
 CHANGE_TIME = int(gvarstatus("CHANGE_TIME")) if gvarstatus("CHANGE_TIME") else 60
