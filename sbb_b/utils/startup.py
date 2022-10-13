@@ -115,7 +115,7 @@ async def startupmessage():
         if BOTLOG:
             Config.JMTHONLOGO = await sbb_b.tgbot.send_file(
                 BOTLOG_CHATID,
-                "https://telegra.ph/file/fe763750014d4afa281fc.mp4",
+                "https://telegra.ph/file/e3b7fba2992032b5ce431.mp4",
                 caption="**تم تشغيل سورس ارمكس بنجاح لعرض الاوامر ارسل .الاوامر**",
                 buttons=[(Button.url("مطور السورس", "https://t.me/USERNAME_NOT_REGISTED"),)],
             )
