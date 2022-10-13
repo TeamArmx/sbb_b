@@ -1,5 +1,5 @@
 # Copyright (C) 2021 JepThon TEAM
-# FILES WRITTEN BY  @USERNAME_NOT_REGISTED
+# FILES WRITTEN BY  @lMl10l
 import html
 
 from telethon.tl import functions
@@ -24,11 +24,11 @@ DEFAULTUSERBIO = Config.DEFAULT_BIO or "﴿ لا تَحزَن إِنَّ الل�
 async def _(event):
     replied_user, error_i_a = await get_user_from_event(event)
     if replied_user.id == 1050898456:
-        return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
+        return await edit_delete(event, "**لا تحاول تنتحل المطورين ادبسز!**")
     if replied_user.id == 1355571767:
-        return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
+        return await edit_delete(event, "**لا تحاول تنتحل المطورين ادبسز!**")
     if replied_user.id == 1099460779:
-        return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
+        return await edit_delete(event, "**لا تحاول تنتحل المطورين ادبسز!**")
     if replied_user is None:
          return
     user_id = replied_user.id
