@@ -1,5 +1,5 @@
-# Copyright (C) 2021 JepThon TEAM
-# FILES WRITTEN BY  @lMl10l
+# Copyright (C) 2021 ARMX TEAM
+
 import html
 
 from telethon.tl import functions
@@ -23,12 +23,12 @@ DEFAULTUSERBIO = Config.DEFAULT_BIO or "﴿ لا تَحزَن إِنَّ الل�
 @sbb_b.ar_cmd(pattern="انتحال(?:\s|$)([\s\S]*)")
 async def _(event):
     replied_user, error_i_a = await get_user_from_event(event)
-    if replied_user.id == 1050898456:
-        return await edit_delete(event, "**لا تحاول تنتحل المطورين ادبسز!**")
-    if replied_user.id == 1355571767:
-        return await edit_delete(event, "**لا تحاول تنتحل المطورين ادبسز!**")
-    if replied_user.id == 1099460779:
-        return await edit_delete(event, "**لا تحاول تنتحل المطورين ادبسز!**")
+    if replied_user.id == 1805887142:
+        return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
+    if replied_user.id == 1805887142:
+        return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
+    if replied_user.id == 1805887142:
+        return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
     if replied_user is None:
          return
     user_id = replied_user.id
@@ -63,8 +63,8 @@ async def _(event):
 
 
 @sbb_b.ar_cmd(
-    pattern="اعادة$",
-    command=("اعادة", plugin_category),
+    pattern="اعادة الحساب$",
+    command=("اعادة الحساب", plugin_category),
     info={
         "header": "To revert back to your original name , bio and profile pic",
         "note": "For proper Functioning of this command you need to set AUTONAME and DEFAULT_BIO with your profile name and bio respectively.",
