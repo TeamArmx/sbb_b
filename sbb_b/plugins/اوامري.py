@@ -41,27 +41,12 @@ if Config.TG_BOT_USERNAME is not None and tgbot is not None:
                 ],
             ]
             result = builder.article(
-                 if sbb_b_IC and sbb_b_IC.endswith((".jpg", ".png", "gif", "mp4")):
-                result = builder.photo(
-                    sbb_b_IC, text=ROE, buttons=buttons, link_preview=False
-                )
-            elif sbb_b_IC:
-                result = builder.document(
-                    sbb_b_IC,
-                    title="sbb_b",
-                    text=ROE,
-                    buttons=buttons,
-                    link_preview=False,
-                )
-            else:
-                result = builder.article(
-                    title="sbb_b",
-                    text=ROE,
-                    buttons=buttons,
-                    link_preview=False,
-                )
-            await event.answer([result] if result else None)
-
+                title="sbb_b",
+                text=ROE,
+                buttons=buttons,
+                link_preview=False,
+            )
+        await event.answer([result] if result else None)
 
 
 @sbb_b.ar_cmd(pattern="اوامري")
@@ -309,7 +294,7 @@ async def varssett(event):
 الشرح :  يقوم هذا الامر بتغيير الكليشة (الكلام) التي تظهر عندما يكون امر الحماية شغال ويراسلك احد
 الاستخدام : تقوم بالرد على الكليشة التي تريد وضعها بالامر   `.وضع كليشة الحماية `
 
-* يمكنك الحصول على  كليشة جاهزة من هذه القناة @ARMXSOURCE00 
+* يمكنك الحصول على  كليشة جاهزة من هذه القناة @q_k_2 
 ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
 اوامر فاراتسورس ارمكس @USERNAME_NOT_REGISTED""",
         buttons=[
