@@ -918,5 +918,5 @@ async def approve_p_m(event):
         event,
         APPROVED_PMs,
         file_name="قائمة الحماية ارمكس.txt",
-        caption="قائمة المسموح لهم الحالية\n سورس كرستين \n @cr_source",
+        caption="قائمة المسموح لهم الحالية\n سورس ارمكس \n @USERNAME_NOT_REGISTED",
     )  # ترجمه وكتابة فريق ارمكس
