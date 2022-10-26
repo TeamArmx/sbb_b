@@ -51,7 +51,7 @@ async def _(event):
 
 
 @sbb_b.ar_cmd(
-    pattern="الغاء منع(?:\s|$)([\s\S]*)",
+    pattern="rmblacklist(?:\s|$)([\s\S]*)",
     require_admin=True,
 )
 async def _(event):

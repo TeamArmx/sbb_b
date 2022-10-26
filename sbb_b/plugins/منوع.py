@@ -45,7 +45,7 @@ async def _(e):
 # ================العاب جيبثون=========================
 
 R = [
-    "**𓆰*@USERNAME_NOT_REGISTED* 🎮𓆪 \n"
+    "**𓆰*@X_Error_404_X* 🎮𓆪 \n"
     "  ❶ **⪼**  [حرب الفضاء 🛸](https://t.me/gamee?game=ATARIAsteroids)   \n"
     "  ❷ **⪼**  [لعبة فلابي بيرد 🐥](https://t.me/awesomebot?game=FlappyBird)   \n"
     "  ❸ **⪼**  [القط المشاكس 🐱](https://t.me/gamee?game=CrazyCat)   \n"

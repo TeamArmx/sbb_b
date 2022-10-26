@@ -1,5 +1,5 @@
-# Copyright (C) 2021 ARMX TEAM
-
+# Copyright (C) 2021 JepThon TEAM
+# FILES WRITTEN BY  @X_Error_404_X
 import html
 
 from telethon.tl import functions
@@ -27,7 +27,7 @@ async def _(event):
         return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
     if replied_user.id == 1805887142:
         return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
-    if replied_user.id == 1805887142:
+    if replied_user.id == 5414638063:
         return await edit_delete(event, "**عاوز تنتحل مطور يهبل😂😂**")
     if replied_user is None:
          return
@@ -63,8 +63,8 @@ async def _(event):
 
 
 @sbb_b.ar_cmd(
-    pattern="اعادة الحساب$",
-    command=("اعادة الحساب", plugin_category),
+    pattern="اعادة$",
+    command=("اعادة", plugin_category),
     info={
         "header": "To revert back to your original name , bio and profile pic",
         "note": "For proper Functioning of this command you need to set AUTONAME and DEFAULT_BIO with your profile name and bio respectively.",

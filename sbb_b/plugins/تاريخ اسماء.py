@@ -1,5 +1,5 @@
 # Copyright (C) 2021 JepThon TEAM
-# FILES WRITTEN BY  @USERNAME_NOT_REGISTED
+# FILES WRITTEN BY  @X_Error_404_X
 import asyncio
 
 from telethon.errors.rpcerrorlist import YouBlockedUserError
@@ -28,7 +28,7 @@ plugin_category = "utils"
         "examples": "{tr}sg @missrose_bot",
     },
 )
-async def _(event):  #   : @USERNAME_NOT_REGISTED
+async def _(event):  #   : @X_Error_404_X
     "To get name/username history."
     input_str = "".join(event.text.split(maxsplit=1)[1:])
     reply_message = await event.get_reply_message()

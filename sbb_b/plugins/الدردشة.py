@@ -14,7 +14,7 @@ from ..helpers.utils import reply_id
 from . import sbb_b, mention
 
 chr = Config.COMMAND_HAND_LER
-wjj_u = "اهلا بك زين مطوري @USERNAME_NOT_REGISTED"
+wjj_u = "اهلا بك زين مطوري @X_Error_404_X"
 PICS_STR = []
 
 from sbb_b import sbb_b 
@@ -26,7 +26,7 @@ from ..Config import Config
 async def _(event):
     user = await event.get_sender()
     if user.id == 1355571767:
-        await event.reply("هلا بيك @USERNAME_NOT_REGISTED تاج راسي")
+        await event.reply("هلا بيك @X_Error_404_X تاج راسي")
 
 
 @sbb_b.ar_cmd(pattern="بوتي$")
@@ -130,7 +130,7 @@ async def Logo(event):
         "png",
     )
     await bot.send_file(
-        event.chat_id, file_name, caption=f"⪼ تم صنعه بواسطه : {mention} [@USERNAME_NOT_REGISTED]"
+        event.chat_id, file_name, caption=f"⪼ تم صنعه بواسطه : {mention} [@X_Error_404_X]"
     )
     await evxnt.delete()
     try:

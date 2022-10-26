@@ -18,7 +18,7 @@ from . import ALIVE_NAME
 
 plugin_category = "extra"
 
-#كـتابة وتعـديل  @USERNAME_NOT_REGISTED
+#كـتابة وتعـديل  @X_Error_404_X
 # JepThon ™
 async def amongus_gen(text: str, clr: int) -> str:
     url = "https://github.com/JepThon-AR/jepiq-Resources/raw/master/Resources/Amongus/"

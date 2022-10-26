@@ -216,4 +216,4 @@ async def _iundlt(event):  # sourcery no-metrics
                     file=msg.old.media,
                 )
 #admin plugin for  jepiq
-# by  @USERNAME_NOT_REGISTED
+# by  @X_Error_404_X

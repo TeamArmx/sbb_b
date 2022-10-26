@@ -1,1319 +1,642 @@
+import random
 import re
-
-from telethon import Button, events
+from datetime import datetime
+import asyncio
+import pyfiglet
+import asyncio
+import calendar
+import json
+import os
+from telethon.errors import ChatSendInlineForbiddenError, ChatSendStickersForbiddenError
+from telethon import Button, functions
+from telethon import events
 from telethon.events import CallbackQuery
-
-from razan.CMD.aomari import *
-from sbb_b import sbb_b
-
+from telethon.utils import get_display_name
+from asyncio.exceptions import TimeoutError
+from bs4 import BeautifulSoup
+from telethon.errors.rpcerrorlist import YouBlockedUserError
+from telethon.tl.functions.messages import ExportChatInviteRequest
+from collections import deque
+from random import choice
+from Arab import iqthon
+from Arab.core.logger import logging
 from ..Config import Config
-from ..core import check_owner
-sbb_b_IC = "https://telegra.ph/file/77ca01bf6d2990c39a1dc.jpg"
-ROE = "** هـذه هي قائمة اوامـر سـورس ارمكس  **"
-ROZADM = "من هنا يمكنك ايجاد جميع"
-RAZAN = Config.TG_BOT_USERNAME
-
-if Config.TG_BOT_USERNAME is not None and tgbot is not None:
-
-    @tgbot.on(events.InlineQuery)
-    async def inline_handler(event):
-        builder = event.builder
-        result = None
-        query = event.text
-        await sbb_b.get_me()
-        if query.startswith("اوامري") and event.query.user_id == sbb_b.uid:
-            buttons = [
-                [Button.inline("معلومات ارمكس", data="AOMRDB")],
-                [
-                    Button.inline("البوت", data="eeeeq"),
-                    Button.inline("الكروب", data="admincmd_s"),
-                ],
-                [
-                    Button.inline("التسلية", data="TASLIACMD"),
-                    Button.inline("الاداوات", data="toolsed1"),
-                ],
-                [
-                    Button.inline("التحميل", data="DOWMANLODE4"),
-                ],
-                [
-                    Button.inline("الاكسترا", data="EXTRACMD"),
-                    Button.inline(" الفارات", data="VARJMTHON"),
-                ],
-            ]
-            if sbb_b_IC and sbb_b_IC.endswith((".jpg", ".png", "gif", "mp4")):
-                result = builder.photo(
-                    sbb_b_IC, text=ROE, buttons=buttons, link_preview=False
-                )
-            elif sbb_b_IC:
-                result = builder.document(
-                    sbb_b_IC,
-                    title="sbb_b",
-                    text=ROE,
-                    buttons=buttons,
-                    link_preview=False,
-                )
+from ..core.managers import edit_delete, edit_or_reply
+from ..helpers.utils import reply_id, _catutils, parse_pre, yaml_format, install_pip, get_user_from_event, _format
+from ..sql_helper import global_collectionjson as sql
+from ..sql_helper import global_list as sqllist
+from ..sql_helper import pmpermit_sql
+from ..sql_helper.globals import addgvar, delgvar, gvarstatus
+from ..helpers import get_user_from_event, sanga_seperator
+from . import mention
+from . import ALIVE_NAME, PM_START, PMMENU, PMMESSAGE_CACHE, check, get_user_from_event, parse_pre, set_key
+from datetime import datetime
+from urllib.parse import quote
+import barcode
+import qrcode
+import requests
+from barcode.writer import ImageWriter
+from bs4 import BeautifulSoup
+from PIL import Image, ImageColor
+from telethon.errors.rpcerrorlist import YouBlockedUserError
+from Arab.utils import admin_cmd
+from ..helpers import AioHttp
+from ..helpers.utils import _catutils, _format, reply_id
+CACHE = {}
+LOGS = logging.getLogger(__name__)
+cmdhd = Config.COMMAND_HAND_LER
+async def do_pm_permit_action(event, chat):  
+    reply_to_id = await reply_id(event)
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    me = await event.client.get_me()
+    mention = f"[{chat.first_name}](tg://user?id={chat.id})"
+    my_mention = f"[{me.first_name}](tg://user?id={me.id})"
+    first = chat.first_name
+    last = chat.last_name
+    fullname = f"{first} {last}" if last else first
+    username = f"@{chat.username}" if chat.username else mention
+    userid = chat.id
+    my_first = me.first_name
+    my_last = me.last_name
+    my_fullname = f"{my_first} {my_last}" if my_last else my_first
+    my_username = f"@{me.username}" if me.username else my_mention
+    if str(chat.id) not in PM_WARNS:
+        PM_WARNS[str(chat.id)] = 0
+    try:
+        MAX_FLOOD_IN_PMS = int(gvarstatus("MAX_FLOOD_IN_PMS") or 10)
+    except (ValueError, TypeError):
+        MAX_FLOOD_IN_PMS = 10
+    totalwarns = MAX_FLOOD_IN_PMS + 1
+    warns = PM_WARNS[str(chat.id)] + 1
+    remwarns = totalwarns - warns
+    if PM_WARNS[str(chat.id)] >= MAX_FLOOD_IN_PMS:
+        try:
+            if str(chat.id) in PMMESSAGE_CACHE:
+                await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+                del PMMESSAGE_CACHE[str(chat.id)]
+        except Exception as e:
+            LOGS.info(str(e))
+        custompmblock = gvarstatus("pmblock") or None
+        if custompmblock is not None:
+            USER_BOT_WARN_ZERO = custompmblock.format(mention=mention, first=first, last=last, fullname=fullname, username=username, userid=userid, my_first=my_first, my_last=my_last, my_fullname=my_fullname, my_username=my_username, my_mention=my_mention, totalwarns=totalwarns, warns=warns, remwarns=remwarns)
+        else:
+            USER_BOT_WARN_ZERO = f"**🝳 ⦙  تـم تـحـذيـرڪ مـسـبـقـاً مـن الـتـڪـرار . تـم حـظـرڪ ، لا يـمـڪـنـڪ ازعـاج الـمـالـڪ !**"
+        msg = await event.reply(USER_BOT_WARN_ZERO)
+        await event.client(functions.contacts.BlockRequest(chat.id))
+        the_message = f"**🝳 ⦙  الـمـحـضـوريـن مـن الـخـاص : 📩**\n🝳 ⦙   [{get_display_name(chat)}](tg://user?id={chat.id}) **تـم حـظـر الـمـسـتـخـدم .🗣🚫** \n**🝳 ⦙   عـدد الـرسـائـل :** {PM_WARNS[str(chat.id)]}"
+        del PM_WARNS[str(chat.id)]
+        sql.del_collection("pmwarns")
+        sql.del_collection("pmmessagecache")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+        sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+        try:
+            return await event.client.send_message(BOTLOG_CHATID,the_message)
+        except BaseException:
+            return
+    custompmpermit = gvarstatus("pmpermit_txt") or None
+    if custompmpermit is not None:
+        USER_BOT_NO_WARN = custompmpermit.format(mention=mention,first=first,last=last,fullname=fullname,username=username,userid=userid,my_first=my_first,my_last=my_last,my_fullname=my_fullname,my_username=my_username,my_mention=my_mention,totalwarns=totalwarns,warns=warns,remwarns=remwarns)
+    elif gvarstatus("pmmenu") is None:
+        USER_BOT_NO_WARN = f"𓍹ⵧⵧⵧⵧⵧⵧⵧⵧᵗᵉˡᵉᵗʰᵒᶰ ᵃʳᵃᵇˢ‌ⵧⵧⵧⵧⵧⵧⵧⵧ𓍻\n\n❞ هـاﺂ هـݪـو٘ {mention} ❝ 🦋\nاﻧـا آݪان ﻣـﺷـغٓول ݪاتࢪﺳـݪ ݪي ࢪﺳـآئݪ ڪﺛـيࢪه وآݪآ سيٰتم حٓـظٍـࢪڪ فقـط قـࢦ سـبب مجـيٰـئڪ اوَ حٰٖـآِجٰتـڪِٰ ، عٰٖـنِ٘ـدمـا آﻋـۅد سِ٘أوافـق علـى ﻣحٰٖـآِډثـتِـك  .. ❞ \n ⤶ ❨  `{warns}/{totalwarns}` ❩\n\n𓍹ⵧⵧⵧⵧⵧⵧⵧⵧᵗᵉˡᵉᵗʰᵒᶰ ᵃʳᵃᵇˢ‌ⵧⵧⵧⵧⵧⵧⵧⵧ𓍻"
+    else:
+        USER_BOT_NO_WARN = f"𓍹ⵧⵧⵧⵧⵧⵧⵧⵧᵗᵉˡᵉᵗʰᵒᶰ ᵃʳᵃᵇˢ‌ⵧⵧⵧⵧⵧⵧⵧⵧ𓍻\n\n❞ هـاﺂ هـݪـو٘ {mention} ❝ 🦋\nاﻧـا آݪان ﻣـﺷـغٓول ݪاتࢪﺳـݪ ݪي ࢪﺳـآئݪ ڪﺛـيࢪه وآݪآ سيٰتم حٓـظٍـࢪڪ فقـط قـࢦ سـبب مجـيٰـئڪ اوَ حٰٖـآِجٰتـڪِٰ ، عٰٖـنِ٘ـدمـا آﻋـۅد سِ٘أوافـق علـى ﻣحٰٖـآِډثـتِـك  .. ❞ \n ⤶ ❨  `{warns}/{totalwarns}` ❩\n\n𓍹ⵧⵧⵧⵧⵧⵧⵧⵧᵗᵉˡᵉᵗʰᵒᶰ ᵃʳᵃᵇˢ‌ⵧⵧⵧⵧⵧⵧⵧⵧ𓍻"
+    addgvar("pmpermit_text", USER_BOT_NO_WARN)
+    PM_WARNS[str(chat.id)] += 1
+    try:
+        if gvarstatus("pmmenu") is None:
+            results = await event.client.inline_query(Config.TG_BOT_USERNAME, "pmpermit")
+            msg = await results[0].click(chat.id, reply_to=reply_to_id, hide_via=True)
+        else:
+            PM_PIC = gvarstatus("pmpermit_pic")
+            if PM_PIC:
+                CAT = [x for x in PM_PIC.split()]
+                PIC = list(CAT)
+                CAT_IMG = random.choice(PIC)
             else:
-                result = builder.article(
-                    title="sbb_b",
-                    text=ROE,
-                    buttons=buttons,
-                    link_preview=False,
-                )
-            await event.answer([result] if result else None)
-
-
-@sbb_b.ar_cmd(pattern="اوامري")
-async def repo(event):
-    start = Config.TG_BOT_USERNAME
-    if event.reply_to_msg_id:
-        await event.get_reply_message()
-    response = await sbb_b.inline_query(start, "اوامري")
-    await response[0].click(event.chat_id)
-    await event.delete()
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"MAIN")))
-@check_owner
-async def _(event):
-    butze = [
-        [Button.inline("معلومات ارمكس", data="AOMRDB")],
-        [
-            Button.inline("البوت", data="eeeeq"),
-            Button.inline("الكروب", data="admincmd_s"),
-        ],
-        [
-            Button.inline("التسلية", data="TASLIACMD"),
-            Button.inline("الاداوات", data="toolsed1"),
-        ],
-        [
-            Button.inline("التحميل", data="DOWMANLODE4"),
-        ],
-        [
-            Button.inline("الاكسترا", data="EXTRACMD"),
-            Button.inline(" الفارات", data="VARJMTHON"),
-        ],
-    ]
-    await event.edit(ROE, buttons=butze)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"VARJMTHON")))
-async def varssett(event):
-    await event.edit(
-        "من هنا يمكنك عرض شروحات الفارات:",
-        buttons=[
-            [
-                Button.inline("فارات الفحص", data="alivevar"),
-                Button.inline("فارات الحماية", data="pmvars"),
-            ],
-            [Button.inline("فارات البروفايل", data="namevar")],
-            [Button.inline("القائمة الرئيسية", data="MAIN")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"namevar")))
-async def varssett(event):
-    await event.edit(
-        "من هنا يمكنك عرض شروحات فارات الاسم والبايو والخ:",
-        buttons=[
-            [
-                Button.inline("اسم حسابك", data="nameprvr"),
-                Button.inline("زخرفة الارقام", data="numlokvar"),
-            ],
-            [
-                Button.inline("نبذة حسابك", data="biolokvar"),
-                Button.inline("صورة حسابك", data="phovarlok"),
-            ],
-            [
-                Button.inline("رمز الاسم", data="symnamvar"),
-            ],
-            [Button.inline("رجوع", data="VARJMTHON")],
-            [Button.inline("القائمة الرئيسية", data="MAIN")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"symnamvar")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات البروفايل
-الفار الحالي: فار الرمز
-الامر:             `.وضع الرمز`
-الشرح :  يقوم هذا الامر بوضع رمز بداية اسم حسابك عند تشغيل امر  .اسم وقتي
-الاستخدام : تقوم بالرد على الرمز بالامر   `.وضع الرمز`
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="namevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"phovarlok")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات البروفايل
-الفار الحالي: فار الصورة
-الامر:             `.وضع الصورة`
-الشرح :  يقوم هذا الامر بوضع الصورة الخاصة بحسابك عند تشغيل امر الصورة الوقتية
-الاستخدام : تقوم بالرد على رابط الصورة بالامر   `.وضع البايو`
-*يمكنك استخدا الزخرفة او اللغة الانكليزية او العربية الخ..
-* كيفية جلب رابط الصورة؟
--بالرد على الصورة المراد استخراج منها الرابط ب  `.تلكراف ميديا`
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="namevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"biolokvar")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات البروفايل
-الفار الحالي: فار البايو
-الامر:             `.وضع البايو`
-الشرح :  يقوم هذا الامر بوضع النبذه او البايو عند تشغيل امر البايو الوقتي
-الاستخدام : تقوم بالرد على البايو بالامر   `.وضع البايو`
-*يمكنك استخدا الزخرفة او اللغة الانكليزية او العربية الخ..
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="namevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"numlokvar")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات البروفايل
-الفار الحالي: فار الزخرفة
-.زخرفة الوقت 1
-.زخرفة الوقت 2
-.زخرفة الوقت 3
-.زخرفة الوقت 4
-.زخرفة الوقت 5
-.زخرفة الوقت 6
-.زخرفة الوقت 7
-.زخرفة الوقت 8
-.زخرفة الوقت 9
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="namevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"nameprvr")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات البروفايل
-الفار الحالي: فار الاسم
-الامر:             `.وضع الاسم`
-الشرح :  يقوم هذا الامر بوضع اسم حسابك للعديد من الاوامر مثل الفحص والخ
-الاستخدام : تقوم بالرد على اسمك بالامر   `.وضع الاسم`
-*يمكنك استخدا الزخرفة او اللغة الانكليزية او العربية الخ..
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="namevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"pmvars")))
-async def varssett(event):
-    await event.edit(
-        "من هنا يمكنك عرض شروحات فارات الحماية:",
-        buttons=[
-            [
-                Button.inline("صورة الحماية", data="picpmvar"),
-                Button.inline("كليشة الحماية", data="pmvarkish"),
-            ],
-            [
-                Button.inline("كليشة الحظر", data="banklish"),
-                Button.inline("عدد التحذيرات", data="warnvars"),
-            ],
-            [Button.inline("رجوع", data="VARJMTHON")],
-            [Button.inline("القائمة الرئيسية", data="MAIN")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"banklish")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات الحماية
-الفار الحالي: فار كليشة الحظر
-الامر:             `.وضع كليشة الحظر`
-الشرح :  يقوم هذا الامر بتغيير الكليشة (الكلام) التي تظهر عندما تنتهي تحذيرات الشخص ويتم حظره
-الاستخدام : تقوم بالرد على الكليشة التي تريد وضعها بالامر   `.وضع كليشة الحظر `
-* يمكنك كتابة اي كليشة مثلا: عزيزي المستخدم تم حظرك 
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس  @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="pmvars")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"warnvars")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات الحماية
-الفار الحالي: فار عدد التحذيرات
-الامر:             `.وضع عدد التحذيرات`
-الشرح :  يقوم هذا الامر بتغيير عدد التحذيرات التي يقوم السورس بتحذير المستخدم بها قبل حظره
-الاستخدام : تقوم بالرد على عدد التحذيرات كرقم  بالامر   `.وضع عدد التحذيرات `
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="pmvars")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"pmvarkish")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات الحماية
-الفار الحالي: فار كليشة الحماية
-الامر:             `.وضع كليشة الحماية`
-الشرح :  يقوم هذا الامر بتغيير الكليشة (الكلام) التي تظهر عندما يكون امر الحماية شغال ويراسلك احد
-الاستخدام : تقوم بالرد على الكليشة التي تريد وضعها بالامر   `.وضع كليشة الحماية `
-* يمكنك الحصول على  كليشة جاهزة من هذه القناة @q_k_2 
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="pmvars")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"picpmvar")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات الحماية
-الفار الحالي: فار صورة الحماية
-الامر:             `.وضع صورة الحماية`
-الشرح :  يقوم هذا الامر بتغيير او وضع الصورة التي تظهر عندما يكون امر الحماية  شغال ويراسلك احد
-الاستخدام : تقوم بالرد على رابط الصورة التي تريد وضعها بالامر   `.وضع صورة الحماية` 
-* كيفية جلب رابط الصورة؟
--بالرد على الصورة المراد استخراج منها الرابط ب  `.تلكراف ميديا`
-ملاحظة : **يمكنك استخدام الاوامر في اي دردشة او محادثة**
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="pmvars")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"alivevar")))
-async def varssett(event):
-    await event.edit(
-        "من هنا يمكنك عرض شروحات فارات الفحص:",
-        buttons=[
-            [
-                Button.inline("صورة الفحص", data="picvars"),
-                Button.inline("كليشة الفحص", data="kleshalive"),
-            ],
-            [Button.inline("رمز الفحص", data="rmzalive")],
-            [Button.inline("رجوع", data="VARJMTHON")],
-            [Button.inline("القائمة الرئيسية", data="MAIN")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"picvars")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات الفحص
-الفار الحالي: فار صورة الفحص
-الامر:             `.وضع صورة الفحص`
-الشرح :  يقوم هذا الامر بتغيير او وضع الصورة التي تظهر عند ارسال  امر   `.فحص`
-الاستخدام : تقوم بالرد على رابط الصورة التي تريد وضعها بالامر   `.وضع صورة الفحص` 
-* كيفية جلب رابط الصورة؟
--بالرد على الصورة المراد استخراج منها الرابط ب  `.تلكراف ميديا`
-ملاحظة : **يمكنك استخدام الاوامر في اي دردشة او محادثة**
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="alivevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"kleshalive")))
-async def varssett(event):
-    await event.edit(
-        """ نوع الفار: فارات الفحص
-الفار الحالي: فار كليشة الفحص
-الامر:             `.وضع كليشة الفحص`
-الشرح :  يقوم هذا الامر بتغيير الكليشة (الكلام) التي تظهر عند ارسال  امر  `.فحص`
-الاستخدام : تقوم بالرد على الكليشة التي تريد وضعها بالامر   `.وضع كليشة الفحص `
-* يمكنك الحصول على  كليشة جاهزة من هذه القناة @q_k_2
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="alivevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"rmzalive")))
-async def varssett(event):
-    await event.edit(
-        """نوع الفار: فارات الفحص
-الفار الحالي: فار رمز الفحص
-الامر:             `.وضع رمز الفحص`
-الشرح :  يقوم هذا الامر بتغيير الرمز  الذي يظهر عند ارسال  امر  `.فحص`
-الاستخدام : تقوم بالرد على الرمز التي تريد وضعه بالامر   `.وضع رمز الفحص `
-ملاحظة : يمكنك استخدام الاوامر في اي دردشة او محادثة
-اوامر فارات سورس ارمكس  @ARMXSOURCE00""",
-        buttons=[
-            [Button.inline("رجوع", data="alivevar")],
-        ],
-    )
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"EXTRACMD")))
-@check_owner
-async def _(event):
-    butze = [
-        [
-            Button.inline("الترجمة", data="ALIVETRG"),
-            Button.inline("التوجيه", data="SAVETECXT"),
-            Button.inline("حالتي", data="R7ALTIE"),
-        ],
-        [
-            Button.inline("الحاسبة", data="CALCATERE"),
-            Button.inline("كورونا", data="COROONA"),
-            Button.inline("الارسال الوهمي", data="SACAMF"),
-        ],
-        [
-            Button.inline("حماية الخاص", data="HEMAIREF"),
-            Button.inline("الذاتية", data="DATECMD"),
-            Button.inline("البروفيل", data="PROFUIECMD"),
-        ],
-        [
-            Button.inline("الصلاة", data="SALACMD"),
-            Button.inline("الكتابة", data="KTABAFE"),
-            Button.inline("التاك و المنشن", data="TAGE4E"),
-        ],
-        [
-            Button.inline("التالي", data="EXTRAC7"),
-            Button.inline("رجوع", data="EXTRAC7"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=butze)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"HEMAIREF")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(HEMAIREF, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"KTABAFE")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(KTABAFE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"EXTRAC7")))
-@check_owner
-async def _(event):
-    butze = [
-        [
-            Button.inline("ملصق متحرك", data="VASCHER"),
-            Button.inline("تحويل صورة", data="STIKERPIC"),
-        ],
-        [
-            Button.inline("تحويل متحركة", data="TOGIDEF"),
-            Button.inline("تحويل لملف", data="ITESRAZAN"),
-        ],
-        [
-            Button.inline("تحويل لكتابة", data="LTABAMEKF"),
-            Button.inline("الملف لصورة", data="AJMTHOEF"),
-        ],
-        [
-            Button.inline("تحويل ملصق", data="PICYEYS"),
-            Button.inline("تحويل صوتي", data="JISORO"),
-        ],
-        [
-            Button.inline("التالي", data="EXTRACMD"),
-            Button.inline("رجوع", data="EXTRACMD"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=butze)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"DOWMANLODE4")))
-@check_owner
-async def _(event):
-    butze = [
-        [
-            Button.inline("تحميل فيديو", data="YOUTUBECCMD"),
-            Button.inline("تحميل صوتي", data="YOUTUBECMD"),
-        ],
-        [
-            Button.inline("بحث", data="ALIVETSM"),
-            Button.inline("فيديو", data="ALIVEFDO"),
-        ],
-        [
-            Button.inline("انستا", data="INSTAGRAMCMD"),
-            Button.inline("بينترست", data="BENTRSTCMD"),
-        ],
-        [
-            Button.inline("نتائج بحث", data="YIOFDD"),
-            Button.inline("تحميل صور", data="PICSERACJ"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=butze)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"INSTAGRAMCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(INSTAGRAMCMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"YOUTUBECMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(YOUTUBECMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"YOUTUBECCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(YOUTUBECCMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETSM")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(ALIVETSM, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEFDO")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(ALIVEFDO, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"BENTRSTCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(BENTRSTCMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"YIOFDD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(YIOFDD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"PICSERACJ")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="DOWMANLODE4")]]
-    await event.edit(PICSERACJ, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"PICYEYS")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(PICYEYS, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"AJMTHOEF")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(AJMTHOEF, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"JISORO")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(JISORO, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"LTABAMEKF")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(LTABAMEKF, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ITESRAZAN")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(ITESRAZAN, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TOGIDEF")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(TOGIDEF, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"STIKERPIC")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(STIKERPIC, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"VASCHER")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRAC7")]]
-    await event.edit(VASCHER, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TAGE4E")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(TAGE4E, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"PROFUIECMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(PROFUIECMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"SACAMF")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(SACAMF, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"R7ALTIE")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(R7ALTIE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"SALACMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(SALACMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"DATECMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(DATECMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"COROONA")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(COROONA, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"SAVETECXT")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(SAVETECXT, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETRG")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="EXTRACMD")]]
-    await event.edit(ALIVETRG, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"BOTCMD4")))
-@check_owner
-async def _(event):
-    butze = [
-        [
-            Button.inline("الفحص", data="ALICES"),
-            Button.inline("سليب ميديا", data="IMSLEEPF"),
-        ],
-        [
-            Button.inline("البنك", data="PINGSMC"),
-            Button.inline("السورس", data="ALICVEINLI"),
-        ],
-        [
-            Button.inline("سرعة الانترنت", data="ALNTDOS"),
-            Button.inline("اعادة تشغيل", data="ALIVEAUD"),
-        ],
-        [
-            Button.inline("تحديث السورس", data="UPDATE4E"),
-            Button.inline("السليب", data="ALIVESLB"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=butze)
-
-
-#
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALICVEINLI")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(ALICVEINLI, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEAUD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(ALIVEAUD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVESLB")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(ALIVESLB, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"IMSLEEPF")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(IMSLEEPF, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"UPDATE4E")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(UPDATE4E, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALICES")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(ALICES, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALNTDOS")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="BOTCMD4")]]
-    await event.edit(ALNTDOS, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"toolsed1")))
-@check_owner
-async def _(event):
+                CAT_IMG = None
+            if CAT_IMG is not None:
+                msg = await event.client.send_file(chat.id,CAT_IMG,caption=USER_BOT_NO_WARN,reply_to=reply_to_id,force_document=False)
+            else:
+                msg = await event.client.send_message(chat.id, USER_BOT_NO_WARN, reply_to=reply_to_id)
+    except Exception as e:
+        LOGS.error(e)
+        msg = await event.reply(USER_BOT_NO_WARN)
+    try:
+        if str(chat.id) in PMMESSAGE_CACHE:
+            await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            del PMMESSAGE_CACHE[str(chat.id)]
+    except Exception as e:
+        LOGS.info(str(e))
+    PMMESSAGE_CACHE[str(chat.id)] = msg.id
+    sql.del_collection("pmwarns")
+    sql.del_collection("pmmessagecache")
+    sql.add_collection("pmwarns", PM_WARNS, {})
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+
+async def do_pm_options_action(event, chat):
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    if event.sender_id == 1226408155:
+            return
+    if str(chat.id) not in PM_WARNS:
+        text = "**🝳 ⦙  اخـتـࢪ احـد الخـيـاࢪات فـي الأعـلى بـلا تـڪـࢪاࢪ ، وهـذا تـحـذيـࢪڪ الاخـيـࢪ !❕🤍**"
+        await event.reply(text)
+        PM_WARNS[str(chat.id)] = 1
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+        return None
+    del PM_WARNS[str(chat.id)]
+    sql.del_collection("pmwarns")
+    sql.add_collection("pmwarns", PM_WARNS, {})
+    try:
+        if str(chat.id) in PMMESSAGE_CACHE:
+            await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            del PMMESSAGE_CACHE[str(chat.id)]
+    except Exception as e:
+        LOGS.info(str(e))
+    sql.del_collection("pmmessagecache")
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    USER_BOT_WARN_ZERO = f"**🝳 ⦙  تـم تـحـذيـرڪ مـسـبـقـاً مـن تـڪـرار الـرسـائـل .** \n**🝳 ⦙   تـم حـظـرڪ مـن الـحـسـاب 🚫.** \n**🝳 ⦙  لـن اسـتـلـم رسـائـلـڪ الـى ان يـاتـي مـالـڪ الـحـسـاب .🧸**"
+    await event.reply(USER_BOT_WARN_ZERO)
+    await event.client(functions.contacts.BlockRequest(chat.id))
+    the_message = f"**🝳 ⦙  حـمـايـة الـخـاص  (الـبـرايـفـت)  : 📩** \n[{get_display_name(chat)}](tg://user?id={chat.id}) **تـم حـظـر الـمـسـتـخـدم .🗣🚫**\n**🝳 ⦙  الـسـبـب ~> اسـتـمـر بـالـتـكـرار .♻️**"
+    sqllist.rm_from_list("pmoptions", chat.id)
+    try:
+        return await event.client.send_message(BOTLOG_CHATID, the_message)
+    except BaseException:
+        return
+
+async def do_pm_enquire_action(event, chat):
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    if str(chat.id) not in PM_WARNS:
+        text = "**🝳 ⦙  يـرجـى الانـتـظـار لــ حـيـن قرائة رسالتك  .🌀 \n 🝳 ⦙   مـالـڪ الـحـسـاب سَــوف يـرد عـلـيـڪ عـنـد اسـتـطـاعـتـه .. \n 🝳 ⦙   يـرجـى عـدم تـڪـرار الـرسـائـل لـتـجـنـب الـحـظـر 🙂🌿**"
+        await event.reply(text)
+        PM_WARNS[str(chat.id)] = 1
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+        # await asyncio.sleep(5)
+        # await msg.delete()
+        return None
+    del PM_WARNS[str(chat.id)]
+    sql.del_collection("pmwarns")
+    sql.add_collection("pmwarns", PM_WARNS, {})
+    try:
+        if str(chat.id) in PMMESSAGE_CACHE:
+            await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            del PMMESSAGE_CACHE[str(chat.id)]
+    except Exception as e:
+        LOGS.info(str(e))
+    sql.del_collection("pmmessagecache")
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    USER_BOT_WARN_ZERO = f"**🝳 ⦙  تـم تـحـذيـرڪ مـسـبـقـاً مـن تـڪـرار الـرسـائـل .** \n**🝳 ⦙   تـم حـظـرڪ مـن الـحـسـاب 🚫.** \n**🝳 ⦙  لـن اسـتـلـم رسـائـلـڪ الـى ان يـاتـي مـالـڪ الـحـسـاب .🧸**"
+    await event.reply(USER_BOT_WARN_ZERO)
+    await event.client(functions.contacts.BlockRequest(chat.id))
+    the_message = f"**🝳 ⦙  حـمـايـة الـخـاص  (الـبـرايـفـت)  : 📩** \n[{get_display_name(chat)}](tg://user?id={chat.id}) **تـم حـظـر الـمـسـتـخـدم .🗣🚫**\n**🝳 ⦙  الـسـبـب ~> اسـتـمـر بـالـتـكـرار .♻️**"
+    sqllist.rm_from_list("pmenquire", chat.id)
+    try:
+        return await event.client.send_message(BOTLOG_CHATID,the_message)
+    except BaseException:
+        return
+
+async def do_pm_request_action(event, chat):
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    if str(chat.id) not in PM_WARNS:
+        text = "**🝳 ⦙  يـرجـى الانـتـظـار لــ حـيـن قرائة رسالتك  🌀. \n 🝳 ⦙   مـالـڪ الـحـسـاب سَــوف يـرد عـلـيـڪ عـنـد اسـتـطـاعـتـه . . \n 🝳 ⦙   يـرجـى عـدم تـڪـرار الـرسـائـل لـتـجـنـب الـحـظـر 🙂🌿**"
+        await event.reply(text)
+        PM_WARNS[str(chat.id)] = 1
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+        return None
+    del PM_WARNS[str(chat.id)]
+    sql.del_collection("pmwarns")
+    sql.add_collection("pmwarns", PM_WARNS, {})
+    try:
+        if str(chat.id) in PMMESSAGE_CACHE:
+            await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            del PMMESSAGE_CACHE[str(chat.id)]
+    except Exception as e:
+        LOGS.info(str(e))
+    sql.del_collection("pmmessagecache")
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    USER_BOT_WARN_ZERO = f"**🝳 ⦙  تـم تـحـذيـرڪ مـسـبـقـاً مـن تـڪـرار الـرسـائـل .** \n**🝳 ⦙   تـم حـظـرڪ مـن الـحـسـاب 🚫.** \n**🝳 ⦙  لـن اسـتـلـم رسـائـلـڪ الـى ان يـاتـي مـالـڪ الـحـسـاب .🧸**"
+    await event.reply(USER_BOT_WARN_ZERO)
+    await event.client(functions.contacts.BlockRequest(chat.id))
+    the_message = f"**🝳 ⦙  حـمـايـة الـخـاص  (الـبـرايـفـت)  : 📩**\n[{get_display_name(chat)}](tg://user?id={chat.id}) **تـم حـظـر الـمـسـتـخـدم .🗣🚫**\n**🝳 ⦙  الـسـبـب ~> اسـتـمـر بـالـتـكـرار .♻️**"
+    sqllist.rm_from_list("pmrequest", chat.id)
+    try:
+        return await event.client.send_message(BOTLOG_CHATID, the_message)
+    except BaseException:
+        return
+
+async def do_pm_chat_action(event, chat):
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    if str(chat.id) not in PM_WARNS:
+        text = "**🝳 ⦙  يـرجـى الانـتـظـار لــ حـيـن قرائة رسالتك  🌀. \n 🝳 ⦙   مـالـڪ الـحـسـاب سَــوف يـرد عـلـيـڪ عـنـد اسـتـطـاعـتـه . . \n 🝳 ⦙   يـرجـى عـدم تـڪـرار الـرسـائـل لـتـجـنـب الـحـظـر 🙂🌿**"
+        await event.reply(text)
+        PM_WARNS[str(chat.id)] = 1
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+        return None
+    del PM_WARNS[str(chat.id)]
+    sql.del_collection("pmwarns")
+    sql.add_collection("pmwarns", PM_WARNS, {})
+    try:
+        if str(chat.id) in PMMESSAGE_CACHE:
+            await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            del PMMESSAGE_CACHE[str(chat.id)]
+    except Exception as e:
+        LOGS.info(str(e))
+    sql.del_collection("pmmessagecache")
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    USER_BOT_WARN_ZERO = f"**🝳 ⦙  تـم تـحـذيـرڪ مـسـبـقـاً مـن تـڪـرار الـرسـائـل .** \n**🝳 ⦙   تـم حـظـرڪ مـن الـحـسـاب 🚫.** \n**🝳 ⦙  لـن اسـتـلـم رسـائـلـڪ الـى ان يـاتـي مـالـڪ الـحـسـاب .🧸**"
+    await event.reply(USER_BOT_WARN_ZERO)
+    await event.client(functions.contacts.BlockRequest(chat.id))
+    the_message = f"**🝳 ⦙  حـمـايـة الـخـاص  (الـبـرايـفـت)  : 📩**\n[{get_display_name(chat)}](tg://user?id={chat.id}) **تـم حـظـر الـمـسـتـخـدم .🗣🚫**\n**🝳 ⦙  الـسـبـب ~> اسـتـمـر بـالـتـكـرار .♻️**"
+    sqllist.rm_from_list("pmchat", chat.id)
+    try:
+        return await event.client.send_message(BOTLOG_CHATID, the_message)
+    except BaseException:
+        return
+async def do_pm_spam_action(event, chat):
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    try:
+        if str(chat.id) in PMMESSAGE_CACHE:
+            await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            del PMMESSAGE_CACHE[str(chat.id)]
+    except Exception as e:
+        LOGS.info(str(e))
+    USER_BOT_WARN_ZERO = f"**🝳 ⦙  تـم تـحـذيـرڪ مـسـبـقـاً مـن تـڪـرار الـرسـائـل .** \n**🝳 ⦙   تـم حـظـرڪ مـن الـحـسـاب 🚫.** \n**🝳 ⦙  لـن اسـتـلـم رسـائـلـڪ الـى ان يـاتـي مـالـڪ الـحـسـاب .🧸**"
+    await event.reply(USER_BOT_WARN_ZERO)
+    await event.client(functions.contacts.BlockRequest(chat.id))
+    the_message = f"**🝳 ⦙  حـمـايـة الـخـاص  (الـبـرايـفـت)  : 📩**\n[{get_display_name(chat)}](tg://user?id={chat.id}) **تـم حـظـر الـمـسـتـخـدم .🗣🚫**\n**🝳 ⦙  الـسـبـب ~> اسـتـمـر بـالـتـكـرار .♻️**"
+    sqllist.rm_from_list("pmspam", chat.id)
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    try:
+        return await event.client.send_message(BOTLOG_CHATID,the_message)
+    except BaseException:
+        return
+
+@iqthon.iq_cmd(incoming=True, func=lambda e: e.is_private, edited=False, forword=None)
+async def on_new_private_message(event):
+    if gvarstatus("pmpermit") is None:
+        return
+    chat = await event.get_chat()
+    if chat.bot or chat.verified:
+        return
+    if pmpermit_sql.is_approved(chat.id):
+        return
+    if str(chat.id) in sqllist.get_collection_list("pmspam"):
+        return await do_pm_spam_action(event, chat)
+    if str(chat.id) in sqllist.get_collection_list("pmchat"):
+        return await do_pm_chat_action(event, chat)
+    if str(chat.id) in sqllist.get_collection_list("pmrequest"):
+        return await do_pm_request_action(event, chat)
+    if str(chat.id) in sqllist.get_collection_list("pmenquire"):
+        return await do_pm_enquire_action(event, chat)
+    if str(chat.id) in sqllist.get_collection_list("pmoptions"):
+        return await do_pm_options_action(event, chat)
+    await do_pm_permit_action(event, chat)
+
+@iqthon.iq_cmd(outgoing=True, func=lambda e: e.is_private, edited=False, forword=None)
+async def you_dm_other(event):
+    if gvarstatus("pmpermit") is None:
+        return
+    chat = await event.get_chat()
+    if chat.bot or chat.verified:
+        return
+    if str(chat.id) in sqllist.get_collection_list("pmspam"):
+        return
+    if str(chat.id) in sqllist.get_collection_list("pmchat"):
+        return
+    if str(chat.id) in sqllist.get_collection_list("pmrequest"):
+        return
+    if str(chat.id) in sqllist.get_collection_list("pmenquire"):
+        return
+    if str(chat.id) in sqllist.get_collection_list("pmoptions"):
+        return
+    if event.text and event.text.startswith(
+        (
+            f"{cmdhd}مرفوض",
+            f"{cmdhd}رفض",
+            f"{cmdhd}س",
+            f"{cmdhd}ر",
+            f"{cmdhd}سماح",
+        )
+    ):
+        return
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    start_date = str(datetime.now().strftime("%B %d, %Y"))
+    if not pmpermit_sql.is_approved(chat.id) and str(chat.id) not in PM_WARNS:
+        pmpermit_sql.approve(chat.id, get_display_name(chat), start_date, chat.username, "**🝳 ⦙  خـطـأ ~> لـم يـتـم رفـضـه .⭕️**")
+        try:
+            PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+        except AttributeError:
+            PMMESSAGE_CACHE = {}
+        if str(chat.id) in PMMESSAGE_CACHE:
+            try:
+                await event.client.delete_messages(chat.id, PMMESSAGE_CACHE[str(chat.id)])
+            except Exception as e:
+                LOGS.info(str(e))
+            del PMMESSAGE_CACHE[str(chat.id)]
+        sql.del_collection("pmmessagecache")
+        sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+
+@iqthon.tgbot.on(CallbackQuery(data=re.compile(rb"show_pmpermit_options")))
+async def on_plug_in_callback_query_handler(event):
+    if event.query.user_id == event.client.uid:
+        text = "**🝳 ⦙   عـذرا ، هـذه الـخـيـارات لـلـمـسـتـخـدم الـذي يـراسـلـك 🧸♥️**"
+        return await event.answer(text, cache_time=0, alert=True)
+    text = f"**حسنا الان بإمكانك اختيار احد الخيارات في الاسفل للتواصل مع :** {mention}.\n**🝳 ⦙   اختر بهدوء خيار واحد فقط لنعرف سبب قدومك هنا 🤍**\n**🝳 ⦙   هذه الخيارات في الاسفل اختر واحد فقط ⬇️**"
     buttons = [
-        [
-            Button.inline("اذاعة للخاص", data="BROADEV1"),
-            Button.inline("اذاعة للكروب", data="BRWAADV1"),
-            Button.inline("اضافة اعضاء", data="ADDMEM7"),
-        ],
-        [
-            Button.inline("الانتحال", data="CLIONEACMD"),
-            Button.inline("الاعادة", data="ALIVEMEE"),
-            Button.inline("الايدي", data="ALIVEDIII"),
-        ],
-        [
-            Button.inline("ايدي", data="KSHFCMD"),
-            Button.inline("التقليد", data="ADDTKLED"),
-            Button.inline("ايقاف التقليد", data="STOPAZAG"),
-        ],
-        [
-            Button.inline("التالي", data="TOOLCMD2"),
-            Button.inline("رجوع", data="TOOLCMD2"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
+        (Button.inline(text="⚜️︙إسـتـفـسـار مـعـيـن .", data="to_enquire_something"),),
+        (Button.inline(text="⚜️︙طـلـب مـعـيـن .", data="to_request_something"),),
+        (Button.inline(text="⚜️︙الـدردشـة .", data="to_chat_with_my_master"),),
+        (Button.inline(text="⚜️︙إزعـاج الـمـالـڪ .", data="to_spam_my_master_inbox"),),
     ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEMEE")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(ALIVEMEE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ADDMEM7")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(ADDMEM7, buttons=buttons, link_preview=False)
-
-
-#######################################################################
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TOOLCMD2")))
-@check_owner
-async def _(event):
-    buttons = [
-        [
-            Button.inline("المقلدهم", data="ALMKD5D"),
-            Button.inline("حذف المقلدهم", data="NOAZAJ4"),
-            Button.inline("تلكراف ميديا", data="TELEHTMED"),
-        ],
-        [
-            Button.inline("كرر", data="TKRAR3ADI"),
-            Button.inline("بوت نشر (مكرر)", data="MKRRR5"),
-            Button.inline("سبام", data="SPAM3AAH"),
-        ],
-        [
-            Button.inline("ايقاف التكرار", data="STOPTKRARE"),
-            Button.inline("وسبام", data="FGKHEF8"),
-        ],
-        [
-            Button.inline("التالي", data="toolsed1"),
-            Button.inline("رجوع", data="toolsed1"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEDIII")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(ALIVEDIII, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALMKD5D")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(ALMKD5D, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"NOAZAJ4")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(NOAZAJ4, buttons=buttons, link_preview=False)
-
-
-#
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TELEHTMED")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(TELEHTMED, buttons=buttons, link_preview=False)
-
-
-# TELEHTMED
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TKRAR3ADI")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(TKRAR3ADI, buttons=buttons, link_preview=False)
-
-
-# ثثثث
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"MKRRR5")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(MKRRR5, buttons=buttons, link_preview=False)
-
-
-# ويو جوا
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"FGKHEF8")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(FGKHEF8, buttons=buttons, link_preview=False)
-
-
-# اي
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"SPAM3AAH")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(SPAM3AAH, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"STOPTKRARE")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TOOLCMD2")]]
-    await event.edit(STOPTKRARE, buttons=buttons, link_preview=False)
-
-
-######
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"BROADEV1")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(BROADEV1, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"BRWAADV1")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(BRWAADV1, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"CLIONEACMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(CLIONEACMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIBACK")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(ALIBACK, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"KSHFCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(KSHFCMD, buttons=buttons, link_preview=False)
-
-
-#
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ADDTKLED")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(ADDTKLED, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"STOPAZAG")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="toolsed1")]]
-    await event.edit(STOPAZAG, buttons=buttons, link_preview=False)
-
-
-##
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TASLIACMD")))
-@check_owner
-async def _(event):
-    buttons = [
-        [
-            Button.inline("الترفيه", data="TRFEHCMD"),
-            Button.inline("التسلية", data="TSLEACMD"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TSLEACMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TASLIACMD")]]
-    await event.edit(TSLEACMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"TRFEHCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="TASLIACMD")]]
-    await event.edit(TRFEHCMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"admincmd_s")))
-@check_owner
-async def _(event):
-    buttons = [
-        [
-            Button.inline("حظر", data="bancmd"),
-            Button.inline("الغاء حظر", data="unbancmd"),
-            Button.inline("المحظورين", data="ALIVEMHA"),
-        ],
-        [
-            Button.inline("كتم", data="ALIVEcatm"),
-            Button.inline("الغاء كتم", data="unmutecmd"),
-            Button.inline("طرد", data="KICKCMD"),
-        ],
-        [
-            Button.inline("تثبيت", data="ALIVEbin"),
-            Button.inline("الغاء التثبيت", data="ALIVEunbin"),
-            Button.inline("رفع مشرف", data="ALIVEadmin"),
-        ],
-        [Button.inline("التالي", data="admin2"), Button.inline("رجوع", data="ADMSS4")],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"admin2")))
-@check_owner
-async def _(event):
-    buttons = [
-        [
-            Button.inline("تنزيل مشرف", data="ALIVEtnadmin"),
-            Button.inline("وضع صورة", data="ALIVEsod"),
-            Button.inline("حذف الصورة", data="ALIVESOR"),
-        ],
-        [
-            Button.inline("ارفع", data="ALIVErfe"),
-            Button.inline("نزل", data="ALIVEnzl"),
-            Button.inline("الاحداث", data="ALIVEADV"),
-        ],
-        [
-            Button.inline("تفليش", data="ALIVETFL"),
-            Button.inline("تنزيل الكل", data="ALIVEgma"),
-            Button.inline("تحذير", data="ALIVETHR"),
-        ],
-        [
-            Button.inline("التالي", data="admi3"),
-            Button.inline("رجوع", data="admincmd_s"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETFL")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVETFL, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"admi3")))
-@check_owner
-async def _(event):
-    buttons = [
-        [
-            Button.inline("حذف التحذيرات", data="ALIVEunTHR"),
-            Button.inline("التحذيرات", data="ALIVETSV"),
-            Button.inline("اضافة ترحيب", data="ALIVETRSB"),
-        ],
-        [
-            Button.inline("ايقاف الترحيب", data="ALIVEundf"),
-            Button.inline("الترحيبات", data="ALIVETRS"),
-            Button.inline("منع كلمة", data="ALMN3CMD"),
-        ],
-        [
-            Button.inline("الغاء منع", data="A3ALMN3"),
-            Button.inline("قائمة المنع", data="LISTBLCK"),
-            Button.inline("مسح المحظورين", data="UMBLCTR"),
-        ],
-        [Button.inline("التالي", data="ADMSS4"), Button.inline("رجوع", data="admin2")],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALMN3CMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(ALMN3CMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ADMSS4")))
-@check_owner
-async def _(event):
-    buttons = [
-        [
-            Button.inline("اضافة رد", data="RDAJFDA"),
-            Button.inline("ايقاف رد", data="RSTOPRD"),
-            Button.inline("حذف الردود", data="ALLRDSTOP"),
-        ],
-        [
-            Button.inline("الردود", data="ALLRD5"),
-            Button.inline("احصائيات", data="ALMSHRFE1"),
-            Button.inline("اطردني", data="MELICLW"),
-        ],
-        [
-            Button.inline("المحذوفين", data="ACCD5SS"),
-            Button.inline("ضع التكرار", data="ALTKRARCMD"),
-        ],
-        [
-            Button.inline("التالي", data="admincmd_s"),
-            Button.inline("رجوع", data="admi3"),
-        ],
-        [Button.inline("القائمة الرئيسية", data="MAIN")],
-    ]
-    await event.edit(ROE, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALTKRARCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(ALTKRARCMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ACCD5SS")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(ACCD5SS, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALMSHRFE1")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(ALMSHRFE1, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETRS")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(ALIVETRS, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"MELICLW")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(MELICLW, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALLRD5")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(ALLRD5, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALLRDSTOP")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(ALLRDSTOP, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"RSTOPRD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(RSTOPRD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"RDAJFDA")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="ADMSS4")]]
-    await event.edit(RDAJFDA, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"UMBLCTR")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(UMBLCTR, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"LISTBLCK")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(LISTBLCK, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"A3ALMN3")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(A3ALMN3, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETRS")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(ALIVETRS, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEundf")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(ALIVEundf, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETRSB")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(ALIVETRSB, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETSV")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(ALIVETSV, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEunTHR")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admi3")]]
-    await event.edit(ALIVEunTHR, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVETHR")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVETHR, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEgma")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVEgma, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEADV")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVEADV, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVErfe")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVErfe, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEnzl")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVEnzl, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVESOR")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVESOR, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEsod")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVEsod, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEtnadmin")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admin2")]]
-    await event.edit(ALIVEtnadmin, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEbin")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEbin, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEunbin")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEunbin, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEadmin")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEadmin, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"KICKCMD")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(KICKCMD, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEMHA")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEMHA, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"bancmd")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEBand, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"unbancmd")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEunban, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"ALIVEcatm")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEcatm, buttons=buttons, link_preview=False)
-
-
-@sbb_b.tgbot.on(CallbackQuery(data=re.compile(rb"unmutecmd")))
-@check_owner
-async def _(event):
-    buttons = [[Button.inline("رجوع", data="admincmd_s")]]
-    await event.edit(ALIVEuncatm, buttons=buttons, link_preview=False)
+    sqllist.add_to_list("pmoptions", event.query.user_id)
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    if str(event.query.user_id) in PM_WARNS:
+        del PM_WARNS[str(event.query.user_id)]
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+    await event.edit(text, buttons=buttons)
+
+@iqthon.tgbot.on(CallbackQuery(data=re.compile(rb"to_enquire_something")))
+async def on_plug_in_callback_query_handler(event):
+    if event.query.user_id == event.client.uid:
+        text = "**🝳 ⦙   عـذرا ، هـذه الـخـيـارات لـلـمـسـتـخـدم الـذي يـراسـلـك 🧸♥️**"
+        return await event.answer(text, cache_time=0, alert=True)
+    text = "**🝳 ⦙  حـسـنـاً ، تـم ارسـال طـلـبـڪ بـنـجـاح 💕 . لا تـقـم بـأخـتـيـار خـيـار ثـانـي .**\n**🝳 ⦙  سَــ يـتـم الـرد عـلـيـڪ عـنـد تَـفَـرُغ الـمـالـڪ . ♥️🧸**"
+    sqllist.add_to_list("pmenquire", event.query.user_id)
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    if str(event.query.user_id) in PM_WARNS:
+        del PM_WARNS[str(event.query.user_id)]
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+    sqllist.rm_from_list("pmoptions", event.query.user_id)
+    await event.edit(text)
+@iqthon.tgbot.on(CallbackQuery(data=re.compile(rb"to_request_something")))
+async def on_plug_in_callback_query_handler(event):
+    if event.query.user_id == event.client.uid:
+        text = "**🝳 ⦙   عـذرا ، هـذه الـخـيـارات لـلـمـسـتـخـدم الـذي يـراسـلـك 🧸♥️**"
+        return await event.answer(text, cache_time=0, alert=True)
+    text = "**🝳 ⦙   حـسـنـاً ، لـقـد قـمـت بـأبـلاغ مـالـڪ الـحـسـاب عـنـدمـا يـصـبـح مـتـصـلا بـالانـتـرنـت**\n**🝳 ⦙  أو عـنـدمـا يـڪـون مـالـڪ الـحـسـاب مـتـاح سـوف يـقـوم بـالـرد عـلـيـڪ لـذلـڪ ارجـو الانـتـظـار 🤍**\n**🝳 ⦙  لـڪـن حـالـيـاً لا تـڪـرر الـرسـائـل لـتـجـنـب الـحـظـر 🙁💞**"
+    sqllist.add_to_list("pmrequest", event.query.user_id)
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    if str(event.query.user_id) in PM_WARNS:
+        del PM_WARNS[str(event.query.user_id)]
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+    sqllist.rm_from_list("pmoptions", event.query.user_id)
+    await event.edit(text)
+
+@iqthon.tgbot.on(CallbackQuery(data=re.compile(rb"to_chat_with_my_master")))
+async def on_plug_in_callback_query_handler(event):
+    if event.query.user_id == event.client.uid:
+        text = "**🝳 ⦙   عـذرا ، هـذه الـخـيـارات لـلـمـسـتـخـدم الـذي يـراسـلـك 🧸♥️**"
+        return await event.answer(text, cache_time=0, alert=True)
+    text = "**🝳 ⦙   بـالـطـبـع يـمـكـنـك الـتـحـدث مـع مـالـك الـحـسـاب لـكـن لـيـس الان  🤍\n🝳 ⦙   نـسـتـطـيـع الـتـكـلـم فـي \n🝳 ⦙   وقـت اخـر حـالـيـا انـا مـشـغـول قـلـيـلاً  - عـنـد تـفـرغـي سـأكـلـمـك هـذا اكـيــد .💭♥️**"
+    sqllist.add_to_list("pmchat", event.query.user_id)
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    if str(event.query.user_id) in PM_WARNS:
+        del PM_WARNS[str(event.query.user_id)]
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+    sqllist.rm_from_list("pmoptions", event.query.user_id)
+    await event.edit(text)
+
+@iqthon.tgbot.on(CallbackQuery(data=re.compile(rb"to_spam_my_master_inbox")))
+async def on_plug_in_callback_query_handler(event):
+    if event.query.user_id == event.client.uid:
+        text = "**🝳 ⦙   عـذرا ، هـذه الـخـيـارات لـلـمـسـتـخـدم الـذي يـراسـلـك 🧸♥️**"
+        return await event.answer(text, cache_time=0, alert=True)
+    text = "**┏┓╋┏┓┏┓\n┣╋━┫┗┫┗┳━┳━┳┓\n┃┃╋┃┏┫┃┃╋┃┃┃┃\n┗┻┓┣━┻┻┻━┻┻━┛\n╋╋┗┛ **\n\n **🝳 ⦙  هـذا تـحـذيـرك الأخـيـر ، ارسـل رسـالـة واحـدة وسـيـتـم حـظـرك تـلـقـائـيـاً . ‼️ **"
+    sqllist.add_to_list("pmspam", event.query.user_id)
+    try:
+     PM_WARNS = sql.get_collection("pmspam").json
+    except AttributeError:
+        PM_WARNS = {}
+    if str(event.query.user_id) in PM_WARNS:
+        del PM_WARNS[str(event.query.user_id)]
+        sql.del_collection("pmwarns")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+    sqllist.rm_from_list("pmoptions", event.query.user_id)
+    await event.edit(text)
+@iqthon.on(admin_cmd(pattern="الحماية (تشغيل|ايقاف)(?: |$)(.*)"))
+async def pmpermit_on(event):
+    input_str = event.pattern_match.group(1)
+    if input_str == "تشغيل":
+        if gvarstatus("pmpermit") is None:
+            addgvar("pmpermit", "true")
+            await edit_delete(event, "**🝳 ⦙   تـم تـفـعـيـل امـر الـحـمـايـة لـحـسـابـك بـنـجـاح  ✅**")
+        else:
+            await edit_delete(event, "**🝳 ⦙  امـر الـحـمـايـة بـالـفـعـل مُـمَـكـن لـحـسـابـك  🌿**")
+    elif gvarstatus("pmpermit") is not None:
+        delgvar("pmpermit")
+        await edit_delete(event, "**🝳 ⦙  تـم تـعـطـيـل امـر الـحـمـايـة لـحـسـابـك بـنـجـاح  ✅**")
+    else:
+        await edit_delete(event, "**🝳 ⦙   امـر الـحـمـايـة بـالـفـعـل مُـعَـطـل لـحـسـابـك 🌿**")
+@iqthon.on(admin_cmd(pattern="الحماية (تشغيل|ايقاف)(?: |$)(.*)"))
+async def pmpermit_on(event):
+    input_str = event.pattern_match.group(1)
+    if input_str == "ايقاف":
+        if gvarstatus("pmmenu") is None: 
+            addgvar("pmmenu", "false")
+            await edit_delete(event,"**🝳 ⦙   امـر الـحـمـايـة بـالـفـعـل مُـعَـطـل لـحـسـابـك 🌿**")
+        else:
+            await edit_delete(event, "**🝳 ⦙   امـر الـحـمـايـة بـالـفـعـل مُـعَـطـل لـحـسـابـك 🌿**")
+    elif gvarstatus("pmmenu") is not None:
+        delgvar("pmmenu")
+        await edit_delete(event, "**🝳 ⦙   تـم تـفـعـيـل امـر الـحـمـايـة لـحـسـابـك بـنـجـاح  ✅**")
+    else:
+        await edit_delete(event, "**🝳 ⦙  امـر الـحـمـايـة بـالـفـعـل مُـمَـكـن لـحـسـابـك  🌿**")
+@iqthon.on(admin_cmd(pattern="(ق|قبول)(?:\s|$)([\s\S]*)"))
+async def approve_p_m(event):  # sourcery no-metrics
+    if gvarstatus("pmpermit") is None:
+        return await edit_delete(event, f"**🝳 ⦙   يــجـب تـفـعـيـل امـر الحـمـايـة أولاً بـأرســال ** {cmdhd} الـحماية تشغيل  لـتـفـعـيـل هـذا الأمـر .⚠️❕")
+    if event.is_private:
+        user = await event.get_chat()
+        reason = event.pattern_match.group(2)
+    else:
+        user, reason = await get_user_from_event(event, secondgroup=True)
+        if not user:
+            return
+    if not reason:
+        reason = "**🝳 ⦙  لـم يـذكـر 💭**"
+    try: 
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    if not pmpermit_sql.is_approved(user.id):
+        if str(user.id) in PM_WARNS:
+            del PM_WARNS[str(user.id)]
+        start_date = str(datetime.now().strftime("%B %d, %Y"))
+        pmpermit_sql.approve(user.id, get_display_name(user), start_date, user.username, reason)
+        chat = user
+        if str(chat.id) in sqllist.get_collection_list("pmspam"):
+            sqllist.rm_from_list("pmspam", chat.id)
+        if str(chat.id) in sqllist.get_collection_list("pmchat"):
+            sqllist.rm_from_list("pmchat", chat.id)
+        if str(chat.id) in sqllist.get_collection_list("pmrequest"):
+            sqllist.rm_from_list("pmrequest", chat.id)
+        if str(chat.id) in sqllist.get_collection_list("pmenquire"):
+            sqllist.rm_from_list("pmenquire", chat.id)
+        if str(chat.id) in sqllist.get_collection_list("pmoptions"):
+            sqllist.rm_from_list("pmoptions", chat.id)
+        await edit_delete(event, f"🝳 ⦙    [{user.first_name}](tg://user?id={user.id})\n**🝳 ⦙   تـم السـمـاح لـه بـأرسـال الـرسـائـل 💬✔️** \n **🝳 ⦙   الـسـبـب ❔  :** {reason}")
+        try:
+            PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+        except AttributeError:
+            PMMESSAGE_CACHE = {}
+        if str(user.id) in PMMESSAGE_CACHE:
+            try:
+                await event.client.delete_messages(user.id, PMMESSAGE_CACHE[str(user.id)])
+            except Exception as e:
+                LOGS.info(str(e))
+            del PMMESSAGE_CACHE[str(user.id)]
+        sql.del_collection("pmwarns")
+        sql.del_collection("pmmessagecache")
+        sql.add_collection("pmwarns", PM_WARNS, {})
+        sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    else:
+        await edit_delete(event, f"[{user.first_name}](tg://user?id={user.id}) \n 🝳 ⦙   هـو بـالـفـعل فـي قـائـمـة الـسـمـاح ✅")
+@iqthon.on(admin_cmd(pattern="(ر|رفض)(?:\s|$)([\s\S]*)"))
+async def disapprove_p_m(event):
+    if gvarstatus("pmpermit") is None:
+        return await edit_delete(event, f"**🝳 ⦙   يــجـب تـفـعـيـل امـر الحـمـايـة أولاً بـأرســال ** {cmdhd} الـحماية تشغيل  لـتـفـعـيـل هـذا الأمـر .⚠️❕")
+    if event.is_private:
+        user = await event.get_chat()
+        reason = event.pattern_match.group(2)
+
+    else:
+        reason = event.pattern_match.group(2)
+        if reason != "الكل":
+            user, reason = await get_user_from_event(event, secondgroup=True)
+            if not user:
+                return
+    if reason == "الكل":
+        pmpermit_sql.disapprove_all()
+        return await edit_delete(event, "**🝳 ⦙   حــسـنـا تــم رفـض الـجـمـيـع بــنـجـاح 💯**")
+    if not reason:
+        reason = "**🝳 ⦙  لـم يـذكـر 💭 **"
+    if pmpermit_sql.is_approved(user.id):
+        pmpermit_sql.disapprove(user.id)
+        await edit_or_reply(event, f"[{user.first_name}](tg://user?id={user.id})\n**🝳 ⦙   تـم رفـضـه مـن أرسـال الـرسـائـل ⚠️**\n**🝳 ⦙   الـسـبـب ❔  :** {reason}")
+    else:
+        await edit_delete(event, f"[{user.first_name}](tg://user?id={user.id})\n ** 🝳 ⦙   لــم يـتـم الـمـوافـقـة عـلـيـه مـسـبـقـاً ❕ **")
+@iqthon.on(admin_cmd(pattern="مرفوض(?:\s|$)([\s\S]*)"))
+async def block_p_m(event):
+    if gvarstatus("pmpermit") is None:
+        return await edit_delete(event, f"**🝳 ⦙   يــجـب تـفـعـيـل امـر الحـمـايـة أولاً بـأرســال ** {cmdhd} الـحماية تشغيل  لـتـفـعـيـل هـذا الأمـر .⚠️❕")
+    if event.is_private:
+        user = await event.get_chat()
+        reason = event.pattern_match.group(1)
+    else:
+        user, reason = await get_user_from_event(event)
+        if not user:
+            return
+    if not reason:
+        reason = "**🝳 ⦙  لـم يـذكـر 💭 **"
+    try:
+        PM_WARNS = sql.get_collection("pmwarns").json
+    except AttributeError:
+        PM_WARNS = {}
+    try:
+        PMMESSAGE_CACHE = sql.get_collection("pmmessagecache").json
+    except AttributeError:
+        PMMESSAGE_CACHE = {}
+    if str(user.id) in PM_WARNS:
+        del PM_WARNS[str(user.id)]
+    if str(user.id) in PMMESSAGE_CACHE:
+        try:
+            await event.client.delete_messages(user.id, PMMESSAGE_CACHE[str(user.id)])
+        except Exception as e:
+            LOGS.info(str(e))
+        del PMMESSAGE_CACHE[str(user.id)]
+    if pmpermit_sql.is_approved(user.id):
+        pmpermit_sql.disapprove(user.id)
+    sql.del_collection("pmwarns")
+    sql.del_collection("pmmessagecache")
+    sql.add_collection("pmwarns", PM_WARNS, {})
+    sql.add_collection("pmmessagecache", PMMESSAGE_CACHE, {})
+    await event.client(functions.contacts.BlockRequest(user.id))
+    await edit_delete(event, f"[{user.first_name}](tg://user?id={user.id})\n **🝳 ⦙   تـم حـظـره بـنـجـاح ، لا يـمـكـنـه مـراسـلـتـك بـعـد الان **\n**🝳 ⦙   الـسـبـب ❔  :** {reason}")
+@iqthon.on(admin_cmd(pattern="مقبول(?:\s|$)([\s\S]*)"))
+async def unblock_pm(event):
+    if gvarstatus("pmpermit") is None:
+        return await edit_delete(event, f"**🝳 ⦙   يــجـب تـفـعـيـل امـر الحـمـايـة أولاً بـأرســال ** {cmdhd} الـحماية تشغيل  لـتـفـعـيـل هـذا الأمـر .⚠️❕")
+    if event.is_private:
+        user = await event.get_chat()
+        reason = event.pattern_match.group(1)
+    else:
+        user, reason = await get_user_from_event(event)
+        if not user:
+            return
+    if not reason:
+        reason = "**🝳 ⦙  لـم يـذكـر 💭 **"
+    await event.client(functions.contacts.UnblockRequest(user.id))
+    await event.edit(f"[{user.first_name}](tg://user?id={user.id}) \n **🝳 ⦙   تـم الـغـاء حـظـره بـنـجـاح ،  يـمـكـنـه مـراسـلـتـك الان **\n**🝳 ⦙   الـسـبـب ❔  :** {reason}")
+@iqthon.on(admin_cmd(pattern="المقبولين(?: |$)(.*)"))
+async def approve_p_m(event):
+    if gvarstatus("pmpermit") is None:
+        return await edit_delete(event,f"**🝳 ⦙   يــجـب تـفـعـيـل امـر الحـمـايـة أولاً بـأرســال ** {cmdhd} الـحماية تشغيل  لـتـفـعـيـل هـذا الأمـر .⚠️❕",)
+    approved_users = pmpermit_sql.get_all_approved()
+    APPROVED_PMs = "🝳 ⦙  قـائـمـة الـمـسـمـوح لـهم الـحـالـيـة : 🔰 \n\n"
+    if len(approved_users) > 0:
+        for user in approved_users:
+            APPROVED_PMs += f"• 👤 {_format.mentionuser(user.first_name , user.user_id)}\n**🝳 ⦙   الأيــدي :** `{user.user_id}`\n**🝳 ⦙   الـمـعـرف:** @{user.username}\n**🝳 ⦙   الـتـاريـخ :** {user.date}\n**🝳 ⦙   الـسـبـب:** {user.reason}\n\n"
+    else:
+        APPROVED_PMs = "🝳 ⦙   لـم تـوافـق عـلـى أي شـخـص مـسـبـقـاً ⁉️"
+    await edit_or_reply(event, APPROVED_PMs, file_name="قائـمة الحـماية.txt", caption="🝳 ⦙  قـائـمـة الـمـسـمـوح لـهم الـحـالـيـة : 🔰 \n سـورس تليثون الـعربي \n @IQTHON")

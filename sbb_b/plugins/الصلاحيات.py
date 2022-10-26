@@ -18,7 +18,7 @@ from . import BOTLOG, get_user_from_event
 plugin_category = "admin" 
 
 # Copyright (C) 2021 JepThon TEAM
-# FILES WRITTEN BY  @USERNAME_NOT_REGISTED
+# FILES WRITTEN BY  @X_Error_404_X
 
 @sbb_b.ar_cmd(
     pattern="قفل (.*)",
@@ -311,7 +311,7 @@ async def _(event):  # sourcery no-metrics
                     event, "⌯︙ارسال الانلاين مسموح في هذه الدردشه ⌁"
                 )
             ainline = False
-            locktype = "الانلاين"  # BY  @USERNAME_NOT_REGISTED  -  @UUNZZ
+            locktype = "الانلاين"  # BY  @X_Error_404_X  -  @UUNZZ
         elif input_str == "التصويت":  
             if not gpoll:
                 return await edit_delete(
@@ -395,7 +395,7 @@ async def _(event):  # sourcery no-metrics
                 time=5,
             )
 
-# BY  @USERNAME_NOT_REGISTED
+# BY  @X_Error_404_X
 @sbb_b.ar_cmd(
     pattern="الصلاحيات$",
     command=("الصلاحيات", plugin_category),
@@ -1139,4 +1139,4 @@ async def _(event):
                     users_added_by
                 )
             )
-#THIS FILE WRITTEN BY  @USERNAME_NOT_REGISTED
+#THIS FILE WRITTEN BY  @X_Error_404_X
