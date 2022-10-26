@@ -173,7 +173,7 @@ Boyroz2 = (
                 "𓂐 𝙅𝙊𝙅 𖠛 ."
             )
             
-   #By @USERNAME_NOT_REGISTED         
+   #By @X_Error_404_X         
 ROZPIO1 = (
     "𓋜┊𓆩 ➝  ˛⁽🇮🇶₎⇣ 𓆪\n"
     "𓋜┊𓆩  𓆪\n"
