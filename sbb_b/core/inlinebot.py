@@ -53,7 +53,7 @@ def ibuild_keyboard(buttons):
 
 
 def main_menu():
-    text = f"**▾∮ مرحبا عزيزي {mention}**\n**▾اليكَ قائمة بازرار مضمنة لاوامر ↫**⍣ⵧⵧⵧDEAD CODE ⵧⵧⵧⵧ⍣**\n[ََِِ𝗰.ًًٍٍ𝗥 ًًٍٍARMX SOURE CODE🧸♥](https://t.me/USERNAME_NOT_REGISTED)\n\n"
+    text = f"**▾∮ مرحبا عزيزي {mention}**\n**▾اليكَ قائمة بازرار مضمنة لاوامر ↫**⍣ⵧⵧⵧDEAD CODE ⵧⵧⵧⵧ⍣**\n[ََِِ𝗰.ًًٍٍ𝗥 ًًٍٍ𝗨ٍّّ𝘀ََِِ𝗲ًًٍٍ𝗥ًًٍٍ𝗕ُُ𝗼ٖٔ𝗧 🧸♥](https://t.me/X_Error_404_X)\n\n"
     buttons = [
         (Button.inline("معلومات الملفات 🗂", data="check"),),
         (
@@ -229,7 +229,7 @@ async def inline_handler(event):
             buttons = [
                 (
                     Button.inline("Stats", data="stats"),
-                    Button.url("DEV", "https://t.me/USERNAME_NOT_REGISTED"),
+                    Button.url("DEV", "https://t.me/X_Error_404_X"),
                 )
             ]
             ALIVE_PIC = gvarstatus("ALIVE_PIC")
@@ -558,7 +558,7 @@ async def inline_handler(event):
     else:
         buttons = [
             (
-                Button.url("قناة السورس", "t.me/USERNAME_NOT_REGISTED"),
+                Button.url("قناة السورس", "t.me/X_Error_404_X"),
                 Button.url(
                     "المطور",
                     "t.me/wjj_u",
@@ -575,9 +575,9 @@ async def inline_handler(event):
         result = types.InputBotInlineResult(
             id=str(uuid4()),
             type="photo",
-            title="[ᥴ.𝘳 𝘴ꪮꪊ𝘳ᥴꫀ♥](https://t.me/USERNAME_NOT_REGISTED)",
+            title="[𝐀𝐑𝐌𝐗  𝐒𝐎𝐔𝐂𝐑𝐄♥](https://t.me/X_Error_404_X)",
             description="لتنصيبه لك",
-            url="t.me/USERNAME_NOT_REGISTED",
+            url="t.me/X_Error_404_X",
             thumb=photo,
             content=photo,
             send_message=types.InputBotInlineMessageMediaAuto(

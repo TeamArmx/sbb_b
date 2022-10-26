@@ -5,7 +5,7 @@ from ..helpers.utils.format import md_to_text, paste_message
 from .data import _sudousers_list
 
 
-# https://t.me/USERNAME_NOT_REGISTED
+# https://t.me/X_Error_404_X
 # https://docs.telethon.dev/en/latest/misc/changelog.html#breaking-changes
 async def edit_or_reply(
     event,
