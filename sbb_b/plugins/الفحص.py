@@ -132,14 +132,14 @@ if Config.TG_BOT_USERNAME is not None and tgbot is not None:
             elif ROZ_PIC:
                 result = builder.document(
                     ROZ_PIC,
-                    title="JMTHON - USERBOT",
+                    title="X_Error_404_X - USERBOT",
                     text=ROZ_T,
                     buttons=buttons,
                     link_preview=False,
                 )
             else:
                 result = builder.article(
-                    title="JMTHON - USERBOT",
+                    title="X_Error_404_X - USERBOT",
                     text=ROZ_T,
                     buttons=buttons,
                     link_preview=False,
